@@ -3,11 +3,11 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets('MNIST_data',one_hot=True)
 
-def LogisticRegression(learning_rate,training_epoch,batch_size):
+def LogisticRegression(learning_rate,training_epoch,batch_size,scale):
     
     x = tf.placeholder(tf.float32,[None,784])
     y = tf.placeholder(tf.float32,[None,10])
-    regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001)
+    regularizer = tf.contrib.layers.l2_regularizer(scale=scale)
     weights = tf.get_variable(name="weights",shape=[784,10],regularizer=regularizer)
     biases = tf.Variable(tf.zeros([10]),name='biases')
     pred = tf.nn.sigmoid(tf.matmul(x,weights)+biases)
@@ -34,4 +34,4 @@ def LogisticRegression(learning_rate,training_epoch,batch_size):
 
 if __name__ == '__main__':
 
-    LogisticRegression(0.1,20,200)
+    LogisticRegression(0.1,1000,200,0.001)
