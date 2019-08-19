@@ -27,7 +27,7 @@ def LogisticRegression(learning_rate,training_epoch,batch_size):
         print("Optimization Finished!")
         correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(pred,1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
-        print("Accuracy = " + str(sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.images})))
+        print("Accuracy = " + str(sess.run(accuracy,feed_dict={x:mnist.test.images,y:mnist.test.labels})))
 
 if __name__ == '__main__':
 
