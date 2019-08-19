@@ -7,11 +7,14 @@ def LogisticRegression(learning_rate,training_epoch,batch_size):
     
     x = tf.placeholder(tf.float32,[None,784])
     y = tf.placeholder(tf.float32,[None,10])
-    weights = tf.Variable(tf.zeros([784,10]))
-    biases = tf.Variable(tf.zeros([10]))
+    regularizer = tf.contrib.layers.l2_regularizer(scale=0.0001)
+    weights = tf.get_variable(name="weights",shape=[784,10],regularizer=regularizer)
+    biases = tf.Variable(tf.zeros([10]),name='biases')
     pred = tf.nn.sigmoid(tf.matmul(x,weights)+biases)
     cost = tf.reduce_mean(-tf.reduce_sum(y*tf.log(pred),axis=1))
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+    keys = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    l2_cost = cost + tf.add_n(keys)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(l2_cost)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
