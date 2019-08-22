@@ -1,52 +1,56 @@
-# Interesting Machine Learning / Deep Learning Scenarios
+# 训练神经网络时batch大小的影响 #
 
-This gist aims to explore interesting scenarios that may be encountered while training machine learning models.
+----------
 
-## Increasing validation accuracy *and* loss
-Let's imagine a scenario where the validation accuracy *and* loss both begin to increase.  Intuitively, it seems like this scenario should not happen, since loss and accuracy seem like they would have an inverse relationship.  Let's explore this a bit in the context of a binary classification problem in which a model parameterizes a Bernoulli distribution (i.e., it outputs the "probability" of the true class) and is trained with the associated negative log likelihood as the loss function (i.e., the "logistic loss" == "log loss" == "binary cross entropy").
 
-Imagine that when the model is predicting a probability of 0.99 for a "true" class, the model is both correct (assuming a decision threshold of 0.5) and has a low loss since it can't do much better for that example.  Now, imagine that the model starts to predict a probability of 0.51 for that same example.  In this case, the model is still correct, but the loss will be much higher.  That covers the case of a flattened accuracy alongside increasing loss.  Let's now add in another example for which the model was originally incorrectly predicting 0.49 for a true class and is now correctly predicting 0.51.  For this individual example, there will only be a small decrease in loss.  If we imagine that both changes occur at the same time, the model will have both a higher accuracy *and* a higher loss (assuming the earlier loss increase is greater than the small decrease for this example).
+&ensp;&ensp;&ensp;&ensp;当训练一个神经网络模型时，会有许多超参数，这些超参数对模型的影响巨大，一旦超参数设置不好，就会让神经网络的效果还不如感知机。因此在面对神经网络这种容量很大的模型时，需要深刻理解其中超参数的意义及其对模型的影响。
 
-Example:
-```python
-import numpy as np
+----------
 
-def log_loss(pred, y):
-  n = len(pred)
-  losses = -y*np.log(pred) - (1-y)*np.log(1-pred)
-  loss = np.sum(losses) / n
-  return loss
+## 基础知识回顾 ##
+下图是神经网络一次迭代过程：
+![](https://i.imgur.com/eiDzsFE.jpg)
 
-def accuracy(pred, y, threshold=0.5):
-  pred = pred >= threshold
-  acc = np.mean(pred == y)
-  return acc * 100
+&ensp;&ensp;&ensp;&ensp;由上图可以看出，首先选择n个样本组成一个batch，然后将batch直接丢进神经网络，得到输出结果，然后将输出的结果与样本正确的label计算loss损失，然后通过BP算法更新参数，这就是一次迭代的过程。
+&ensp;&ensp;&ensp;&ensp;由此，最直观的超参数就是batch的大小————我们可以一次性将整个数据输入神经网络，让神经网络利用全部样本来计算迭代的梯度(即传统的梯度下降法)，也可以一次只输入一个样本(严格意义上的随机梯度下降法SGD)，也可以选择一个折中的方案，即每次只输入一部分样本，让其完成本轮迭代（即batch梯度下降法）。
+&ensp;&ensp;&ensp;&ensp;一次性输入100个样本并迭代一次，跟一次性输入500个样本相比，主要区别有两种：
+### 第一种 ####
 
-# almost perfect
-pred = np.array([0.99])
-y = np.array([1])
-loss = log_loss(pred, y)
-acc = accuracy(pred, y)
-print(loss, acc)  # 0.0100503358535 100.0
+总更新值 = 旧参数下更新值1+旧参数下更新值2+...+旧参数下更新值100；
 
-# barely correct -- no change in accuracy, much higher loss
-pred = np.array([0.51])
-y = np.array([1])
-loss = log_loss(pred, y)
-acc = accuracy(pred, y)
-print(loss, acc)  # 0.673344553264 100.0
+新参数 = 旧参数 + 总更新值；
 
-# one barely incorrect prediction, one very correct prediction
-pred = np.array([0.49, 0.99])
-y = np.array([1, 1])
-loss = log_loss(pred, y)
-acc = accuracy(pred, y)
-print(loss, acc)  # 0.361700111865 50.0
+以二分类逻辑回归分类为例，loss损失为
 
-# two barely correct predictions -- higher accuracy, higher loss
-pred = np.array([0.51, 0.51])
-y = np.array([1, 1])
-loss = log_loss(pred, y)
-acc = accuracy(pred, y)
-print(loss, acc)  # 0.673344553264 100.0
-```
+<img src="https://latex.codecogs.com/gif.latex?J(\Theta)&space;=&space;-\frac{1}{m}\left&space;[\sum&space;y_{i}log&space;h_{\Theta}\left&space;(&space;x_{i}&space;\right&space;)&space;&plus;&space;(1-y_{i})log(1-h_{\Theta}\left&space;(&space;x_{i}&space;\right&space;))&space;\right&space;]" title="J(\Theta) = -\frac{1}{m}\left [\sum y_{i}log h_{\Theta}\left ( x_{i} \right ) + (1-y_{i})log(1-h_{\Theta}\left ( x_{i} \right )) \right ]" />
+
+由该公式可知，标准的梯度下降法是计算所有样本的log损失和，参数只需要更新一次。  
+### 第二种 ####                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+                                                           
+新参数1 = 旧参数 + 旧参数下计算更新值；
+
+新参数2 = 新参数1 + 新参数1下计算更新值；
+
+新参数3 = 新参数2 + 新参数2下计算更新值；
+
+...
+
+新参数100 =新参数100 + 新参数100下计算更新值；
+
+还是以二分类逻辑回归分类为例，loss损失函数为：
+
+<img src="https://latex.codecogs.com/gif.latex?J(\Theta)&space;=&space;-(log&space;h_{\Theta}\left&space;(&space;x_{i}&space;\right&space;)&space;&plus;&space;(1-y_{i})log(1-h_{\Theta}\left&space;(&space;x_{i}&space;\right&space;)))" title="J(\Theta) = -(log h_{\Theta}\left ( x_{i} \right ) + (1-y_{i})log(1-h_{\Theta}\left ( x_{i} \right )))" />
+
+由该公式可知，随机梯度下降法是每次只计算一个样本的log损失，每次参数更新一次。
+
+那么问题来了，哪一种方式更好呢？
+### 收敛速度 #### 
+
+----------
+
+首先，我们分析哪种方法收敛更快。
+
+我们假设每个样本相对于大自然真实分布的标准差为σ，那么根据概率统计的知识，很容易推出n个样本的标准差为<img src="https://latex.codecogs.com/gif.latex?\frac{\sigma&space;}{\sqrt{n}}" title="\frac{\sigma }{\sqrt{n}}" />
+
+从这里可以看出，
+
